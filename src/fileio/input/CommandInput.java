@@ -13,6 +13,7 @@ public final class CommandInput {
     private Integer playlistId; // pentru add/remove song
     private String playlistName; // pentru create playlist
     private Integer seed; // pentru shuffle
+    private String recommendationType; // pentru recommendation
 
     private int age;
     private String city;
@@ -24,6 +25,8 @@ public final class CommandInput {
     private ArrayList<SongInput> songs;
     private Integer releaseYear;
     private String nextPage;
+    private String previousPage;
+
 
     public CommandInput() {
     }
@@ -187,6 +190,22 @@ public final class CommandInput {
         this.nextPage = nextPage;
     }
 
+    public String getPreviousPage() {
+        return previousPage;
+    }
+
+    public void setPreviousPage(final String previousPage) {
+        this.previousPage = previousPage;
+    }
+
+    public String getRecommendationType() {
+        return recommendationType;
+    }
+
+    public void setRecommendationType(final String recommendationType) {
+        this.recommendationType = recommendationType;
+    }
+
     @Override
     public String toString() {
         return "CommandInput{"
@@ -200,6 +219,7 @@ public final class CommandInput {
                 + ", playlistId=" + playlistId
                 + ", playlistName='" + playlistName + '\''
                 + ", seed=" + seed
+                + ", recommendationType='" + recommendationType + '\''
                 + '}';
     }
 }
