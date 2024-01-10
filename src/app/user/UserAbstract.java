@@ -1,5 +1,11 @@
 package app.user;
 
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The type User abstract.
  */
@@ -7,6 +13,9 @@ public abstract class UserAbstract {
     private String username;
     private int age;
     private String city;
+    @Getter
+    @Setter
+    private Map<String, Integer> listens;
 
     /**
      * Instantiates a new User abstract.
@@ -19,6 +28,7 @@ public abstract class UserAbstract {
         this.username = username;
         this.age = age;
         this.city = city;
+        listens = new HashMap<>();
     }
 
     /**
@@ -81,4 +91,7 @@ public abstract class UserAbstract {
      * @return the string
      */
     public abstract String userType();
+    public void addListen(final String name) {
+        listens.merge(name, 1, Integer::sum);
+    }
 }

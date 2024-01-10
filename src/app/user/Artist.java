@@ -1,12 +1,16 @@
 package app.user;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import app.audio.Collections.Album;
 import app.audio.Collections.AlbumOutput;
 import app.audio.Files.Song;
 import app.pages.ArtistPage;
+import app.user.contentCreatorSpecifics.Event;
+import app.user.contentCreatorSpecifics.Merchandise;
 
 /**
  * The type Artist.

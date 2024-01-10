@@ -1,9 +1,11 @@
 package app.user;
 
+import app.Admin;
 import app.audio.Collections.AudioCollection;
 import app.audio.Collections.Playlist;
 import app.audio.Collections.PlaylistOutput;
 import app.audio.Files.AudioFile;
+import app.audio.Files.Episode;
 import app.audio.Files.Song;
 import app.audio.LibraryEntry;
 import app.pages.HomePage;
@@ -18,12 +20,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The type User.
  */
-public final class User extends UserAbstract {
+public final class User extends UserAbstract implements AudioListener{
     @Getter
     private ArrayList<Playlist> playlists;
     @Getter
@@ -45,6 +49,7 @@ public final class User extends UserAbstract {
     @Getter
     @Setter
     private LikedContentPage likedContentPage;
+    private Map<String, Integer> topGenres;
 
     /**
      * Instantiates a new User.
@@ -59,6 +64,7 @@ public final class User extends UserAbstract {
         likedSongs = new ArrayList<>();
         followedPlaylists = new ArrayList<>();
         player = new Player();
+        player.add(this);
         searchBar = new SearchBar(username);
         lastSearched = false;
         status = true;
@@ -66,6 +72,7 @@ public final class User extends UserAbstract {
         homePage = new HomePage(this);
         currentPage = homePage;
         likedContentPage = new LikedContentPage(this);
+        topGenres = new HashMap<>();
     }
 
     @Override
@@ -588,5 +595,20 @@ public final class User extends UserAbstract {
         }
 
         player.simulatePlayer(time);
+    }
+
+    @Override
+    public void updateListens() {
+        if (player.getCurrentAudioFile() == null) {
+            return;
+        } else if (player.getType().equals("song") || player.getType().equals("playlist") || player.getType().equals("album")) {
+            addListen(player.getCurrentAudioFile().getName()); // actualizeaza ascultarile userului
+            topGenres.merge(((Song)player.getCurrentAudioFile()).getGenre(),1,Integer::sum); // actualizeaza genurile ascultate
+            Artist artist = Admin.getInstance().getArtist(((Song) player.getCurrentAudioFile()).getArtist());
+            artist.addListen(player.getCurrentAudioFile().getName()); // actualizeaza ascultarile artistului
+        } else if (player.getType().equals("podcast")) {
+            Host host = Admin.getInstance().getHost(player.getCurrentAudioCollection().getOwner());
+            host.addListen(getPlayerStats().getName()); // actualizeaza ascultarile hostului
+        }
     }
 }

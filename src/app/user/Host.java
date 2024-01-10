@@ -2,8 +2,11 @@ package app.user;
 
 import app.audio.Collections.Podcast;
 import app.pages.HostPage;
+import app.user.contentCreatorSpecifics.Announcement;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The type Host.
@@ -99,4 +102,5 @@ public final class Host extends ContentCreator {
     public String userType() {
         return "host";
     }
+
 }

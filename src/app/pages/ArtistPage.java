@@ -2,8 +2,8 @@ package app.pages;
 
 import app.audio.Collections.Album;
 import app.user.Artist;
-import app.user.Event;
-import app.user.Merchandise;
+import app.user.contentCreatorSpecifics.Event;
+import app.user.contentCreatorSpecifics.Merchandise;
 
 import java.util.List;
 

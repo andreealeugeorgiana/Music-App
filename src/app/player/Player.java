@@ -3,6 +3,7 @@ package app.player;
 import app.audio.Collections.AudioCollection;
 import app.audio.Files.AudioFile;
 import app.audio.LibraryEntry;
+import app.user.AudioListener;
 import app.utils.Enums;
 import lombok.Getter;
 
@@ -12,7 +13,7 @@ import java.util.List;
 /**
  * The type Player.
  */
-public final class Player {
+public final class Player implements  ObservablePlayer{
     private Enums.RepeatMode repeatMode;
     private boolean shuffle;
     private boolean paused;
@@ -23,6 +24,7 @@ public final class Player {
     private final int skipTime = 90;
 
     private ArrayList<PodcastBookmark> bookmarks = new ArrayList<>();
+    private ArrayList<AudioListener> listeners = new ArrayList<>();
 
 
     /**
@@ -174,6 +176,7 @@ public final class Player {
             while (elapsedTime >= source.getDuration()) {
                 elapsedTime -= source.getDuration();
                 next();
+                notifyListeners();
                 if (paused) {
                     break;
                 }
@@ -287,5 +290,22 @@ public final class Player {
         }
 
         return new PlayerStats(filename, duration, repeatMode, shuffle, paused);
+    }
+
+    @Override
+    public void add(final AudioListener listener) {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void remove(final AudioListener listener) {
+        listeners.remove(listener);
+    }
+
+    @Override
+    public void notifyListeners() {
+        for (AudioListener listener : listeners) {
+            listener.updateListens();
+        }
     }
 }
