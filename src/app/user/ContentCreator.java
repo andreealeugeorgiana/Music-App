@@ -1,6 +1,8 @@
 package app.user;
 
 import app.pages.Page;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The type Content creator.
@@ -8,6 +10,9 @@ import app.pages.Page;
 public abstract class ContentCreator extends UserAbstract {
     private String description;
     private Page page;
+    @Getter
+    @Setter
+    private Integer listeners;
 
     /**
      * Instantiates a new Content creator.
@@ -18,6 +23,7 @@ public abstract class ContentCreator extends UserAbstract {
      */
     public ContentCreator(final String username, final int age, final String city) {
         super(username, age, city);
+        listeners = 0;
     }
 
     /**
@@ -54,5 +60,8 @@ public abstract class ContentCreator extends UserAbstract {
      */
     public void setPage(final Page page) {
         this.page = page;
+    }
+    public void increaseListeners() {
+        listeners++;
     }
 }

@@ -14,6 +14,7 @@ import fileio.input.CommandInput;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The type Command runner.
@@ -779,6 +780,23 @@ public final class CommandRunner {
         objectNode.put("timestamp", commandInput.getTimestamp());
         objectNode.put("result", objectMapper.valueToTree(playlists));
 
+        return objectNode;
+    }
+
+    public static ObjectNode wrapped(final CommandInput commandInput) {
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("result", objectMapper.valueToTree(admin.wrapped(commandInput.getUsername())));
+
+        return objectNode;
+    }
+
+    public static ObjectNode endProgram() {
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", "endProgram");
+        objectNode.put("result", objectMapper.valueToTree(admin.endProgram()));
         return objectNode;
     }
 }

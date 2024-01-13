@@ -136,10 +136,11 @@ public final class Main {
                 case "getOnlineUsers" -> outputs.add(CommandRunner.getOnlineUsers(command));
                 case "showAlbums" -> outputs.add(CommandRunner.showAlbums(command));
                 case "showPodcasts" -> outputs.add(CommandRunner.showPodcasts(command));
+                case "wrapped" -> outputs.add(CommandRunner.wrapped(command));
                 default -> System.out.println("Invalid command " + commandName);
             }
         }
-
+        outputs.add(CommandRunner.endProgram());
         ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
         objectWriter.writeValue(new File(filePath2), outputs);
 

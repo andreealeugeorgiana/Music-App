@@ -5,7 +5,6 @@ import app.audio.Collections.AudioCollection;
 import app.audio.Collections.Playlist;
 import app.audio.Collections.PlaylistOutput;
 import app.audio.Files.AudioFile;
-import app.audio.Files.Episode;
 import app.audio.Files.Song;
 import app.audio.LibraryEntry;
 import app.pages.HomePage;
@@ -15,6 +14,7 @@ import app.player.Player;
 import app.player.PlayerStats;
 import app.searchBar.Filters;
 import app.searchBar.SearchBar;
+import app.user.tops.UserTops;
 import app.utils.Enums;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,7 +49,9 @@ public final class User extends UserAbstract implements AudioListener{
     @Getter
     @Setter
     private LikedContentPage likedContentPage;
-    private Map<String, Integer> topGenres;
+    @Getter
+    @Setter
+    private UserTops userTops;
 
     /**
      * Instantiates a new User.
@@ -64,15 +66,15 @@ public final class User extends UserAbstract implements AudioListener{
         likedSongs = new ArrayList<>();
         followedPlaylists = new ArrayList<>();
         player = new Player();
-        player.add(this);
+        player.add(this); // adaug user-ul care observa schimbarea player-ului
         searchBar = new SearchBar(username);
         lastSearched = false;
         status = true;
+        userTops = new UserTops();
 
         homePage = new HomePage(this);
         currentPage = homePage;
         likedContentPage = new LikedContentPage(this);
-        topGenres = new HashMap<>();
     }
 
     @Override
@@ -170,7 +172,7 @@ public final class User extends UserAbstract implements AudioListener{
 
         player.setSource(searchBar.getLastSelected(), searchBar.getLastSearchType());
         searchBar.clearSelection();
-
+        updateListens();
         player.pause();
 
         return "Playback loaded successfully.";
@@ -601,14 +603,23 @@ public final class User extends UserAbstract implements AudioListener{
     public void updateListens() {
         if (player.getCurrentAudioFile() == null) {
             return;
-        } else if (player.getType().equals("song") || player.getType().equals("playlist") || player.getType().equals("album")) {
-            addListen(player.getCurrentAudioFile().getName()); // actualizeaza ascultarile userului
-            topGenres.merge(((Song)player.getCurrentAudioFile()).getGenre(),1,Integer::sum); // actualizeaza genurile ascultate
+        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.LIBRARY)|| player.getSource().getType().equals(Enums.PlayerSourceType.ALBUM) || player.getSource().getType().equals(Enums.PlayerSourceType.PLAYLIST)) {
             Artist artist = Admin.getInstance().getArtist(((Song) player.getCurrentAudioFile()).getArtist());
-            artist.addListen(player.getCurrentAudioFile().getName()); // actualizeaza ascultarile artistului
-        } else if (player.getType().equals("podcast")) {
-            Host host = Admin.getInstance().getHost(player.getCurrentAudioCollection().getOwner());
-            host.addListen(getPlayerStats().getName()); // actualizeaza ascultarile hostului
+            String songName = player.getCurrentAudioFile().getName();
+            String albumName = ((Song) player.getCurrentAudioFile()).getAlbum();
+
+            userTops.updateTopsSong(artist.getUsername(), ((Song)player.getCurrentAudioFile()).getGenre(), songName, albumName); // actualizeaza topurile userului
+            artist.getArtistTops().updateTops(albumName, songName, getUsername());
+            if (!Admin.getInstance().getListenedArtists().contains(artist)) {
+                Admin.getInstance().getListenedArtists().add(artist);
+            }
+        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.PODCAST)) {
+//            Host host = Admin.getInstance().getHost(player.getCurrentAudioCollection().getOwner());
+
+            userTops.updateTopsEpisode(player.getCurrentAudioFile().getName()); // actualizeaza topurile userului
+//            host.getHostTops().updateTops(player.getCurrentAudioFile().getName());
+//
+//            host.increaseListeners();
         }
     }
 }

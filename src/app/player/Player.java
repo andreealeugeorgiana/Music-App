@@ -176,7 +176,7 @@ public final class Player implements  ObservablePlayer{
             while (elapsedTime >= source.getDuration()) {
                 elapsedTime -= source.getDuration();
                 next();
-                notifyListeners();
+                notifyListeners(); // notify chiar in updateAudioFile din PlayerSource
                 if (paused) {
                     break;
                 }

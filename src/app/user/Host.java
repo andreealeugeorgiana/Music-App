@@ -3,6 +3,9 @@ package app.user;
 import app.audio.Collections.Podcast;
 import app.pages.HostPage;
 import app.user.contentCreatorSpecifics.Announcement;
+import app.user.tops.HostTops;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +17,9 @@ import java.util.Map;
 public final class Host extends ContentCreator {
     private ArrayList<Podcast> podcasts;
     private ArrayList<Announcement> announcements;
+    @Getter
+    @Setter
+    private HostTops hostTops;
 
     /**
      * Instantiates a new Host.
@@ -26,6 +32,7 @@ public final class Host extends ContentCreator {
         super(username, age, city);
         podcasts = new ArrayList<>();
         announcements = new ArrayList<>();
+        hostTops = new HostTops();
 
         super.setPage(new HostPage(this));
     }

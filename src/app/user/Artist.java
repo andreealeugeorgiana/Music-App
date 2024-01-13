@@ -11,6 +11,9 @@ import app.audio.Files.Song;
 import app.pages.ArtistPage;
 import app.user.contentCreatorSpecifics.Event;
 import app.user.contentCreatorSpecifics.Merchandise;
+import app.user.tops.ArtistTops;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The type Artist.
@@ -19,6 +22,12 @@ public final class Artist extends ContentCreator {
     private ArrayList<Album> albums;
     private ArrayList<Merchandise> merch;
     private ArrayList<Event> events;
+    @Getter
+    @Setter
+    private ArtistTops artistTops;
+    @Getter
+    @Setter
+    int ranking;
 
     /**
      * Instantiates a new Artist.
@@ -32,6 +41,8 @@ public final class Artist extends ContentCreator {
         albums = new ArrayList<>();
         merch = new ArrayList<>();
         events = new ArrayList<>();
+        artistTops = new ArtistTops();
+        ranking = 0;
 
         super.setPage(new ArtistPage(this));
     }

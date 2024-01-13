@@ -15,6 +15,7 @@ import app.user.Host;
 import app.user.contentCreatorSpecifics.Merchandise;
 import app.user.User;
 import app.user.UserAbstract;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import fileio.input.CommandInput;
 import fileio.input.EpisodeInput;
 import fileio.input.PodcastInput;
@@ -22,15 +23,7 @@ import fileio.input.SongInput;
 import fileio.input.UserInput;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +34,8 @@ public final class Admin {
     private List<User> users = new ArrayList<>();
     @Getter
     private List<Artist> artists = new ArrayList<>();
+    @Getter
+    private List<Artist> listenedArtists = new ArrayList<>();
     @Getter
     private List<Host> hosts = new ArrayList<>();
     private List<Song> songs = new ArrayList<>();
@@ -873,4 +868,40 @@ public final class Admin {
         }
         return topPlaylists;
     }
+
+    public LinkedHashMap<String, Object> wrapped(String name) {
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+
+        if (getUser(name) != null) {
+            result.put("topArtists", getUser(name).getUserTops().getTopArtists());
+            result.put("topGenres", getUser(name).getUserTops().getTopGenres());
+            result.put("topSongs", getUser(name).getUserTops().getTopSongs());
+            result.put("topAlbums", getUser(name).getUserTops().getTopAlbums());
+            result.put("topEpisodes", getUser(name).getUserTops().getTopEpisodes());
+        } else if (getArtist(name) != null) {
+            result.put("topAlbums", getArtist(name).getArtistTops().getTopAlbums());
+            result.put("topSongs", getArtist(name).getArtistTops().getTopSongs());
+            result.put("topFans", getArtist(name).getArtistTops().getTopFans());
+            getArtist(name).setListeners(getArtist(name).getArtistTops().getTopFans().size());
+            result.put("listeners", getArtist(name).getListeners());
+        } else if (getHost(name) != null) {
+            result.put("topEpisodes", getHost(name).getHostTops().getTopEpisodes());
+            result.put("listeners", getHost(name).getListeners());
+        }
+        return result;
+    }
+
+    public LinkedHashMap<String, LinkedHashMap<String, Object>> endProgram() {
+        LinkedHashMap<String, LinkedHashMap<String, Object>> result = new LinkedHashMap<>();
+        for (Artist artist : listenedArtists) {
+            LinkedHashMap<String, Object> artistStats = new LinkedHashMap<>();
+            artistStats.put("merchRevenue", 0.0);
+            artistStats.put("songRevenue", 0.0);
+            artistStats.put("ranking", 1);
+            artistStats.put("mostProfitableSong", "N/A");
+            result.put(artist.getUsername(), artistStats);
+        }
+        return result;
+    }
+
 }
