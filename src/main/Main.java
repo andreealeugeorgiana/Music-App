@@ -85,12 +85,10 @@ public final class Main {
         admin.setSongs(library.getSongs());
         admin.setPodcasts(library.getPodcasts());
         CommandRunner.updateAdmin();
-
         for (CommandInput command : commands) {
             admin.updateTimestamp(command.getTimestamp());
 
             String commandName = command.getCommand();
-
             switch (commandName) {
                 case "search" -> outputs.add(CommandRunner.search(command));
                 case "select" -> outputs.add(CommandRunner.select(command));
@@ -137,6 +135,18 @@ public final class Main {
                 case "showAlbums" -> outputs.add(CommandRunner.showAlbums(command));
                 case "showPodcasts" -> outputs.add(CommandRunner.showPodcasts(command));
                 case "wrapped" -> outputs.add(CommandRunner.wrapped(command));
+                case "buyPremium" -> outputs.add(CommandRunner.buyPremium(command));
+                case "cancelPremium" -> outputs.add(CommandRunner.cancelPremium(command));
+                case "subscribe" -> outputs.add(CommandRunner.subscribe(command));
+                case "getNotifications" -> outputs.add(CommandRunner.getNotifications(command));
+                case "buyMerch" -> outputs.add(CommandRunner.buyMerch(command));
+                case "seeMerch" -> outputs.add(CommandRunner.seeMerch(command));
+                case "nextPage" -> outputs.add(CommandRunner.nextPage(command));
+                case "previousPage" -> outputs.add(CommandRunner.previousPage(command));
+                case "updateRecommendations" -> outputs.add(CommandRunner
+                                                        .updateRecommendations(command));
+                case "loadRecommendations" -> outputs.add(CommandRunner
+                                                       .loadRecommendations(command));
                 default -> System.out.println("Invalid command " + commandName);
             }
         }

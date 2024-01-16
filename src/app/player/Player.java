@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * The type Player.
  */
-public final class Player implements  ObservablePlayer{
+public final class Player implements  ObservablePlayer {
     private Enums.RepeatMode repeatMode;
     private boolean shuffle;
     private boolean paused;
@@ -175,11 +175,12 @@ public final class Player implements  ObservablePlayer{
         if (!paused) {
             while (elapsedTime >= source.getDuration()) {
                 elapsedTime -= source.getDuration();
+                //case when add
                 next();
-                notifyListeners(); // notify chiar in updateAudioFile din PlayerSource
                 if (paused) {
                     break;
                 }
+                notifyListeners(); // notify chiar in updateAudioFile din PlayerSource
             }
             if (!paused) {
                 source.skip(-elapsedTime);

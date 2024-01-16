@@ -1,6 +1,7 @@
 package app.audio.Files;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,8 @@ public final class Song extends AudioFile {
     private final String genre;
     private final Integer releaseYear;
     private final String artist;
+    @Setter
+    private Double revenue;
     private Integer likes;
 
     /**
@@ -41,8 +44,8 @@ public final class Song extends AudioFile {
         this.releaseYear = releaseYear;
         this.artist = artist;
         this.likes = 0;
+        revenue = 0.0;
     }
-
     @Override
     public boolean matchesAlbum(final String albumName) {
         return this.getAlbum().equalsIgnoreCase(albumName);

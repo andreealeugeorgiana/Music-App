@@ -10,6 +10,7 @@ import app.audio.LibraryEntry;
 import app.pages.HomePage;
 import app.pages.LikedContentPage;
 import app.pages.Page;
+import app.pages.navigation.PageNavigation;
 import app.player.Player;
 import app.player.PlayerStats;
 import app.searchBar.Filters;
@@ -19,21 +20,22 @@ import app.utils.Enums;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The type User.
  */
-public final class User extends UserAbstract implements AudioListener{
+public final class User extends UserAbstract implements AudioListener {
     @Getter
     private ArrayList<Playlist> playlists;
     @Getter
     private ArrayList<Song> likedSongs;
     @Getter
     private ArrayList<Playlist> followedPlaylists;
+    @Getter
+    private ArrayList<Playlist> recommendedPlaylists;
+    @Getter
+    private ArrayList<Song> recommendedSongs;
     @Getter
     private final Player player;
     @Getter
@@ -52,6 +54,18 @@ public final class User extends UserAbstract implements AudioListener{
     @Getter
     @Setter
     private UserTops userTops;
+    @Getter
+    @Setter
+    private boolean premium;
+    @Getter
+    private List<LinkedHashMap<String, String>> notifications;
+    @Getter
+    private List<String> myMerch;
+    @Getter
+    private PageNavigation pageNavigation;
+    @Getter
+    @Setter
+    private LibraryEntry lastRecommended;
 
     /**
      * Instantiates a new User.
@@ -71,10 +85,17 @@ public final class User extends UserAbstract implements AudioListener{
         lastSearched = false;
         status = true;
         userTops = new UserTops();
+        premium = false;
+        notifications = new ArrayList<>();
+        myMerch = new ArrayList<>();
+        recommendedPlaylists = new ArrayList<>();
+        recommendedSongs = new ArrayList<>();
+        lastRecommended = null;
 
         homePage = new HomePage(this);
         currentPage = homePage;
         likedContentPage = new LikedContentPage(this);
+        pageNavigation = new PageNavigation(this);
     }
 
     @Override
@@ -172,6 +193,28 @@ public final class User extends UserAbstract implements AudioListener{
 
         player.setSource(searchBar.getLastSelected(), searchBar.getLastSearchType());
         searchBar.clearSelection();
+        updateListens();
+        player.pause();
+
+        return "Playback loaded successfully.";
+    }
+
+    public String loadRecommendations() {
+        if (!status) {
+            return "%s is offline.".formatted(getUsername());
+        }
+
+        if (lastRecommended == null) {
+            return "No recommendations available.";
+        }
+
+        if (lastRecommended.getName().contains("playlist")) {
+            player.setSource(recommendedPlaylists.
+                    get(recommendedPlaylists.size() - 1), "playlist");
+        } else {
+            player.setSource(recommendedSongs.
+                    get(recommendedPlaylists.size()), "song");
+        }
         updateListens();
         player.pause();
 
@@ -598,28 +641,118 @@ public final class User extends UserAbstract implements AudioListener{
 
         player.simulatePlayer(time);
     }
+    /**
+     * Calculates revenue for the given artist based on user's top statistics.
+     *
+     * @param artist The artist for whom revenue is calculated.
+     */
+    private void calculateRevenue(final Artist artist) {
+        if (premium) {
+            double artistSongs = 0.0;
+            for (Map.Entry<String, Integer> entry : userTops.getTopArtists().entrySet()) {
+                if (artist.equals(Admin.getInstance().getArtist(entry.getKey()))) {
+                    artistSongs += entry.getValue();
+                }
+            }
+            double totalSongs = 0.0;
+            for (Map.Entry<String, Integer> entry : userTops.getTopSongs().entrySet()) {
+                totalSongs += entry.getValue();
+            }
+            Double value = 1000000.0 * (double) (artistSongs / totalSongs);
+            ((Song) player.getCurrentAudioFile()).setRevenue(value);
+            artist.setSongRevenue(value);
+            artist.changeMostProfitableSong();
+        }
+    }
+    /**
+     * Updates the revenue based on the current player state and source type.
+     */
+    public void updateRevenue() {
+        if (player.getSource().getType().equals(Enums.PlayerSourceType.LIBRARY)
+                || player.getSource().getType().equals(Enums.PlayerSourceType.ALBUM)
+                || player.getSource().getType().equals(Enums.PlayerSourceType.PLAYLIST)) {
+            Artist artist = Admin.getInstance()
+                    .getArtist(((Song) player.getCurrentAudioFile()).getArtist());
+            calculateRevenue(artist);
+        }
+    }
 
     @Override
     public void updateListens() {
         if (player.getCurrentAudioFile() == null) {
             return;
-        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.LIBRARY)|| player.getSource().getType().equals(Enums.PlayerSourceType.ALBUM) || player.getSource().getType().equals(Enums.PlayerSourceType.PLAYLIST)) {
-            Artist artist = Admin.getInstance().getArtist(((Song) player.getCurrentAudioFile()).getArtist());
+        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.LIBRARY)
+                || player.getSource().getType().equals(Enums.PlayerSourceType.ALBUM)
+                || player.getSource().getType().equals(Enums.PlayerSourceType.PLAYLIST)) {
+            Artist artist = Admin.getInstance()
+                    .getArtist(((Song) player.getCurrentAudioFile()).getArtist());
             String songName = player.getCurrentAudioFile().getName();
             String albumName = ((Song) player.getCurrentAudioFile()).getAlbum();
 
-            userTops.updateTopsSong(artist.getUsername(), ((Song)player.getCurrentAudioFile()).getGenre(), songName, albumName); // actualizeaza topurile userului
+            userTops.updateTopsSong(artist.getUsername(),
+                    ((Song) player.getCurrentAudioFile()).getGenre(), songName, albumName);
             artist.getArtistTops().updateTops(albumName, songName, getUsername());
+
             if (!Admin.getInstance().getListenedArtists().contains(artist)) {
                 Admin.getInstance().getListenedArtists().add(artist);
             }
-        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.PODCAST)) {
-//            Host host = Admin.getInstance().getHost(player.getCurrentAudioCollection().getOwner());
+            updateRevenue();
+            artist.setListeners(artist.getArtistTops().getTopFans().size());
 
-            userTops.updateTopsEpisode(player.getCurrentAudioFile().getName()); // actualizeaza topurile userului
-//            host.getHostTops().updateTops(player.getCurrentAudioFile().getName());
-//
-//            host.increaseListeners();
+        } else if (player.getSource().getType().equals(Enums.PlayerSourceType.PODCAST)) {
+            Host host = Admin.getInstance()
+                    .getHost(player.getSource().getAudioCollection().getOwner());
+
+            userTops.updateTopsEpisode(player.getCurrentAudioFile().getName());
+            if (host != null) {
+                host.getHostTops()
+                        .updateTops(player.getCurrentAudioFile().getName(), getUsername());
+                host.setListeners(host.getHostTops().getTopFans().size());
+            }
         }
     }
+
+    @Override
+    public void updateNotifications(final String name, final String description) {
+        LinkedHashMap<String, String> notificationMap = new LinkedHashMap<>();
+        notificationMap.put("name", name);
+        notificationMap.put("description", description);
+        notifications.add(notificationMap);
+    }
+    /**
+     * Clears all notifications associated with the user.
+     */
+    public void clearNotifications() {
+        notifications.clear();
+    }
+    /**
+     * Adds a merchandise item to the user's collection.
+     *
+     * @param merch The merchandise item to add.
+     */
+    public void addMerch(final String merch) {
+        myMerch.add(merch);
+    }
+
+    /**
+     * Adds a recommended playlist to the user's recommended playlists.
+     *
+     * @param playlist The recommended playlist to add.
+     */
+    public void addRecommendedPlaylist(final Playlist playlist) {
+        if (playlist != null) {
+            recommendedPlaylists.add(playlist);
+        }
+    }
+    /**
+     * Adds a recommended song to the user's recommended songs.
+     *
+     * @param song The recommended song to add.
+     */
+    public void addRecommendedSong(final Song song) {
+        if (song != null) {
+            recommendedSongs.add(song);
+        }
+    }
+
 }

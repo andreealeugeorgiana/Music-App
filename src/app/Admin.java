@@ -3,6 +3,8 @@ package app;
 import app.audio.Collections.Album;
 import app.audio.Collections.AudioCollection;
 import app.audio.Collections.Playlist;
+import app.audio.Collections.PlaylistFactory.RandomFactory;
+import app.audio.Collections.PlaylistFactory.Recommendation;
 import app.audio.Collections.Podcast;
 import app.audio.Files.AudioFile;
 import app.audio.Files.Episode;
@@ -15,7 +17,7 @@ import app.user.Host;
 import app.user.contentCreatorSpecifics.Merchandise;
 import app.user.User;
 import app.user.UserAbstract;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import app.utils.Enums;
 import fileio.input.CommandInput;
 import fileio.input.EpisodeInput;
 import fileio.input.PodcastInput;
@@ -124,7 +126,6 @@ public final class Admin {
     public List<Song> getSongs() {
         return new ArrayList<>(songs);
     }
-
     /**
      * Gets podcasts.
      *
@@ -390,6 +391,7 @@ public final class Admin {
                                                 username,
                                                 newSongs,
                                                 commandInput.getReleaseYear()));
+        currentArtist.notifyListeners("New Album", "New Album from %s.".formatted(username));
         return "%s has added new album successfully.".formatted(username);
     }
 
@@ -479,6 +481,7 @@ public final class Admin {
         Podcast newPodcast = new Podcast(podcastName, username, episodes);
         currentHost.getPodcasts().add(newPodcast);
         podcasts.add(newPodcast);
+        currentHost.notifyListeners("New Podcast", "New Podcast from %s.".formatted(username));
 
         return "%s has added new podcast successfully.".formatted(username);
     }
@@ -549,6 +552,7 @@ public final class Admin {
         currentArtist.getEvents().add(new Event(eventName,
                                                 commandInput.getDescription(),
                                                 commandInput.getDate()));
+        currentArtist.notifyListeners("New Event", "New Event from %s.".formatted(username));
         return "%s has added new event successfully.".formatted(username);
     }
 
@@ -633,6 +637,8 @@ public final class Admin {
         currentArtist.getMerch().add(new Merchandise(commandInput.getName(),
                                                      commandInput.getDescription(),
                                                      commandInput.getPrice()));
+        currentArtist.notifyListeners("New Merchandise",
+                "New Merchandise from %s.".formatted(username));
         return "%s has added new merchandise successfully.".formatted(username);
     }
 
@@ -663,6 +669,8 @@ public final class Admin {
 
         currentHost.getAnnouncements().add(new Announcement(announcementName,
                                                             announcementDescription));
+        currentHost.notifyListeners("New Announcement",
+                "New Announcement from %s.".formatted(username));
         return "%s has successfully added new announcement.".formatted(username);
     }
 
@@ -718,8 +726,24 @@ public final class Admin {
         }
 
         switch (nextPage) {
-            case "Home" -> user.setCurrentPage(user.getHomePage());
-            case "LikedContent" -> user.setCurrentPage(user.getLikedContentPage());
+            case "Home" ->  {
+                user.setCurrentPage(user.getHomePage());
+                user.getPageNavigation().addPage(user.getCurrentPage());
+            }
+            case "LikedContent" ->  {
+                user.setCurrentPage(user.getLikedContentPage());
+                user.getPageNavigation().addPage(user.getCurrentPage());
+            }
+            case "Artist" -> {
+                user.setCurrentPage(getArtist(((Song) user.getPlayer()
+                        .getCurrentAudioFile()).getArtist()).getPage());
+                user.getPageNavigation().addPage(user.getCurrentPage());
+            }
+            case "Host" -> {
+                user.setCurrentPage(getHost(user.getPlayer()
+                        .getCurrentAudioCollection().getOwner()).getPage());
+                user.getPageNavigation().addPage(user.getCurrentPage());
+            }
             default -> {
                 return "%s is trying to access a non-existent page.".formatted(username);
             }
@@ -869,39 +893,210 @@ public final class Admin {
         return topPlaylists;
     }
 
-    public LinkedHashMap<String, Object> wrapped(String name) {
+    /**
+     * Wraps information related to a user, artist, or host based on the provided name.
+     *
+     * @param name The name of the user, artist, or host.
+     * @return A LinkedHashMap containing information about top entities or null if not found.
+     */
+    public LinkedHashMap<String, Object> wrapped(final String name) {
         LinkedHashMap<String, Object> result = new LinkedHashMap<>();
 
         if (getUser(name) != null) {
-            result.put("topArtists", getUser(name).getUserTops().getTopArtists());
-            result.put("topGenres", getUser(name).getUserTops().getTopGenres());
-            result.put("topSongs", getUser(name).getUserTops().getTopSongs());
-            result.put("topAlbums", getUser(name).getUserTops().getTopAlbums());
-            result.put("topEpisodes", getUser(name).getUserTops().getTopEpisodes());
+            if (getUser(name).getUserTops().emptyTops()) {
+                return null;
+            }
+            result.put("topArtists", getUser(name).getUserTops().getTop5Artists());
+            result.put("topGenres", getUser(name).getUserTops().getTop5Genres());
+            result.put("topSongs", getUser(name).getUserTops().getTop5Songs());
+            result.put("topAlbums", getUser(name).getUserTops().getTop5Albums());
+            result.put("topEpisodes", getUser(name).getUserTops().getTop5Episodes());
         } else if (getArtist(name) != null) {
-            result.put("topAlbums", getArtist(name).getArtistTops().getTopAlbums());
-            result.put("topSongs", getArtist(name).getArtistTops().getTopSongs());
-            result.put("topFans", getArtist(name).getArtistTops().getTopFans());
-            getArtist(name).setListeners(getArtist(name).getArtistTops().getTopFans().size());
+            if (getArtist(name).getArtistTops().emptyTops()) {
+                return null;
+            }
+            result.put("topAlbums", getArtist(name).getArtistTops().getTop5Albums());
+            result.put("topSongs", getArtist(name).getArtistTops().getTop5Songs());
+            result.put("topFans", getArtist(name).getArtistTops().getTop5Fans());
             result.put("listeners", getArtist(name).getListeners());
         } else if (getHost(name) != null) {
-            result.put("topEpisodes", getHost(name).getHostTops().getTopEpisodes());
+            if (getHost(name).getHostTops().emptyTops()) {
+                return null;
+            }
+            result.put("topEpisodes", getHost(name).getHostTops().getTop5Episodes());
             result.put("listeners", getHost(name).getListeners());
         }
         return result;
     }
 
+    /**
+     * Allows a user to buy a premium subscription.
+     *
+     * @param name The username of the user.
+     * @return A message indicating the success or failure of the premium subscription purchase.
+     */
+    public String buyPremium(final String name) {
+        if (getUser(name) == null) {
+            return "The username %s doesn't exist.".formatted(name);
+        } else {
+            if (getUser(name).isPremium()) {
+                return name + " is already a premium user.";
+            } else {
+                getUser(name).setPremium(true);
+                return name + " bought the subscription successfully.";
+            }
+        }
+    }
+
+    /**
+     * Cancels the premium subscription for a user.
+     *
+     * @param name The username of the user.
+     * @return A message indicating the success or failure of the premium subscription cancellation.
+     */
+    public String cancelPremium(final String name) {
+        if (getUser(name) == null) {
+            return "The username %s doesn't exist.".formatted(name);
+        } else {
+            if (!getUser(name).isPremium()) {
+                return name + " is not a premium user.";
+            } else {
+                getUser(name).setPremium(false);
+                return name + " canceled the subscription successfully.";
+            }
+        }
+    }
+
+    private void rankListenedArtists() {
+        // Sort the list in descending order based on the sum of revenues
+        listenedArtists.sort(Comparator.comparingDouble(artist ->
+                        ((Artist) artist).getSongRevenue() + ((Artist) artist).getMerchRevenue())
+                .reversed());
+
+        // Set the ranking based on the index + 1
+        for (int i = 0; i < listenedArtists.size(); i++) {
+            listenedArtists.get(i).setRanking(i + 1);
+        }
+    }
+
+    /**
+     * Ends the program and provides a LinkedHashMap containing statistics for listened artists.
+     *
+     * @return A LinkedHashMap with artist statistics.
+     */
     public LinkedHashMap<String, LinkedHashMap<String, Object>> endProgram() {
         LinkedHashMap<String, LinkedHashMap<String, Object>> result = new LinkedHashMap<>();
+        listenedArtists.sort(Comparator.comparing(Artist::getUsername));
+        rankListenedArtists();
         for (Artist artist : listenedArtists) {
             LinkedHashMap<String, Object> artistStats = new LinkedHashMap<>();
-            artistStats.put("merchRevenue", 0.0);
-            artistStats.put("songRevenue", 0.0);
-            artistStats.put("ranking", 1);
-            artistStats.put("mostProfitableSong", "N/A");
+            artistStats.put("merchRevenue", artist.getMerchRevenue());
+            artistStats.put("songRevenue", Math.round(artist.getSongRevenue() * 100.0) / 100.0);
+            artistStats.put("ranking", artist.getRanking());
+            artistStats.put("mostProfitableSong", artist.getMostProfitableSong());
             result.put(artist.getUsername(), artistStats);
         }
         return result;
     }
 
+    /**
+     * Allows a user to subscribe or unsubscribe from an artist's or host's page.
+     *
+     * @param username The username of the user.
+     * @return A message indicating the success or failure of the subscription operation.
+     */
+    public String subscribe(final String username) {
+        if (getUser(username) == null) {
+            return "The username %s doesn't exist.".formatted(username);
+        } else {
+            for (Artist artist : artists) {
+                if (getUser(username).getCurrentPage().equals(artist.getPage())) {
+                    if (artist.getSubscribers().contains(getUser(username))) {
+                        artist.remove(getUser(username));
+                        return username + " unsubscribed from "
+                                + artist.getUsername() + " successfully.";
+                    } else {
+                        artist.add(getUser(username));
+                        return username + " subscribed to "
+                                + artist.getUsername() + " successfully.";
+                    }
+                }
+            }
+            for (Host host : hosts) {
+                if (getUser(username).getCurrentPage().equals(host.getPage())) {
+                    if (host.getSubscribers().contains(getUser(username))) {
+                        host.remove(getUser(username));
+                        return username + " unsubscribed from "
+                                + host.getUsername() + " successfully.";
+                    } else {
+                        host.add(getUser(username));
+                        return username + " subscribed to "
+                                + host.getUsername() + " successfully.";
+                    }
+                }
+            }
+        }
+        return "To subscribe you need to be on the page of an artist or host.";
+    }
+
+    /**
+     * Allows a user to buy merchandise from an artist's page.
+     *
+     * @param username   The username of the user.
+     * @param merchName  The name of the merchandise to be purchased.
+     * @return A message indicating the success or failure of the merch purchase operation.
+     */
+    public String buyMerch(final String username, final String merchName) {
+        if (getUser(username) == null) {
+            return "The username %s doesn't exist.".formatted(username);
+        } else {
+            for (Artist artist : artists) {
+                if (getUser(username).getCurrentPage().equals(artist.getPage())) {
+                    for (Merchandise merch : artist.getMerch()) {
+                        if (merch.getName().equals(merchName)) {
+                            getUser(username).addMerch(merch.getName());
+                            artist.addToMerchRevenue((double) merch.getPrice());
+                            listenedArtists.add(artist);
+                            return "%s has added new merch successfully.".formatted(username);
+                        }
+                    }
+                    return "The merch %s doesn't exist.".formatted(merchName);
+                }
+            }
+        }
+        return "Cannot buy merch from this page.";
+    }
+
+    /**
+     * Updates recommendations for a user based on the specified type.
+     *
+     * @param username The username of the user.
+     * @param type     The type of recommendation to be updated.
+     * @return A message indicating the success or failure of the recommendation update operation.
+     */
+    public String updateRecommendations(final String username, final String type) {
+        if (getUser(username) == null && getArtist(username) == null && getHost(username) == null) {
+            return "The username %s doesn't exist.".formatted(username);
+        } else if (getUser(username) != null) {
+            if (getUser(username).getPlayer().getSource() == null
+                    || getUser(username).getPlayer().getSource()
+                    .getType().equals(Enums.PlayerSourceType.PODCAST)) {
+                return "No new recommendations were found";
+            }
+            RandomFactory randomFactory = new RandomFactory();
+            Recommendation recommendation = randomFactory.createRecommendation(type);
+            if (type.equals("random_song")) {
+                getUser(username).addRecommendedSong((Song) recommendation
+                        .createRecommendation(getUser(username)));
+            } else if (type.equals("random_playlist") || type.equals("fans_playlist")) {
+                getUser(username).addRecommendedPlaylist((Playlist) recommendation
+                        .createRecommendation(getUser(username)));
+            }
+            getUser(username).setLastRecommended(recommendation
+                    .createRecommendation(getUser(username)));
+            return "The recommendations for user %s have been updated successfully."
+                    .formatted(username);
+        }
+        return "%s is not a normal user.".formatted(username);
+    }
 }

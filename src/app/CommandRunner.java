@@ -14,7 +14,6 @@ import fileio.input.CommandInput;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The type Command runner.
@@ -783,16 +782,216 @@ public final class CommandRunner {
         return objectNode;
     }
 
+    /**
+     * Wraps information about a user, artist,
+     * or host and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing wrapped information or a message indicating no data.
+     */
     public static ObjectNode wrapped(final CommandInput commandInput) {
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("command", commandInput.getCommand());
         objectNode.put("user", commandInput.getUsername());
         objectNode.put("timestamp", commandInput.getTimestamp());
-        objectNode.put("result", objectMapper.valueToTree(admin.wrapped(commandInput.getUsername())));
+        if (admin.wrapped(commandInput.getUsername()) == null) {
+            if (admin.getUser(commandInput.getUsername()) != null) {
+                objectNode.put("message",
+                        "No data to show for user %s.".formatted(commandInput.getUsername()));
+                return objectNode;
+            } else if (admin.getArtist(commandInput.getUsername()) != null) {
+                objectNode.put("message",
+                        "No data to show for artist %s.".formatted(commandInput.getUsername()));
+                return objectNode;
+            } else {
+                objectNode.put("message",
+                        "No data to show for host %s.".formatted(commandInput.getUsername()));
+                return objectNode;
+            }
+        }
+        objectNode.put("result",
+                objectMapper.valueToTree(admin.wrapped(commandInput.getUsername())));
 
         return objectNode;
     }
 
+    /**
+     * Buys a premium subscription for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the premium subscription purchase.
+     */
+    public static ObjectNode buyPremium(final CommandInput commandInput) {
+        String message = admin.buyPremium(commandInput.getUsername());
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Cancels the premium subscription for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the premium subscription cancellation.
+     */
+    public static ObjectNode cancelPremium(final CommandInput commandInput) {
+        String message = admin.cancelPremium(commandInput.getUsername());
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Subscribes or unsubscribes a user from an artist's
+     * or host's page and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the subscription operation.
+     */
+    public static ObjectNode subscribe(final CommandInput commandInput) {
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", admin.subscribe(commandInput.getUsername()));
+
+        return objectNode;
+    }
+
+    /**
+     * Retrieves notifications for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing user notifications.
+     */
+    public static ObjectNode getNotifications(final CommandInput commandInput) {
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("notifications", objectMapper
+                .valueToTree(admin.getUser(commandInput.getUsername()).getNotifications()));
+        admin.getUser(commandInput.getUsername()).clearNotifications();
+
+        return objectNode;
+    }
+    /**
+     * Buys merchandise for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the merchandise purchase.
+     */
+    public static ObjectNode buyMerch(final CommandInput commandInput) {
+        String message = admin.buyMerch(commandInput.getUsername(), commandInput.getName());
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Retrieves a user's owned merchandise and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the user's owned merchandise.
+     */
+    public static ObjectNode seeMerch(final CommandInput commandInput) {
+        List<String> merch = admin.getUser(commandInput.getUsername()).getMyMerch();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("result", objectMapper.valueToTree(merch));
+
+        return objectNode;
+    }
+
+    /**
+     * Moves a user to the next page and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the page navigation.
+     */
+    public static ObjectNode nextPage(final CommandInput commandInput) {
+        String message = admin.getUser(commandInput.getUsername()).getPageNavigation().nextPage();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Moves a user to the previous page and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the page navigation.
+     */
+    public static ObjectNode previousPage(final CommandInput commandInput) {
+        String message = admin.getUser(commandInput.getUsername())
+                .getPageNavigation().previousPage();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Updates recommendations for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of the recommendation update.
+     */
+    public static ObjectNode updateRecommendations(final CommandInput commandInput) {
+        String message = admin.updateRecommendations(commandInput.getUsername(),
+                commandInput.getRecommendationType());
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Loads recommendations for a user and constructs an ObjectNode for command output.
+     *
+     * @param commandInput The input containing the command details.
+     * @return An ObjectNode containing the result of loading recommendations.
+     */
+    public static ObjectNode loadRecommendations(final CommandInput commandInput) {
+        String message = admin.getUser(commandInput.getUsername()).loadRecommendations();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("command", commandInput.getCommand());
+        objectNode.put("user", commandInput.getUsername());
+        objectNode.put("timestamp", commandInput.getTimestamp());
+        objectNode.put("message", message);
+
+        return objectNode;
+    }
+
+    /**
+     * Ends the program and constructs an ObjectNode with the final program results.
+     *
+     * @return An ObjectNode containing the final program results.
+     */
     public static ObjectNode endProgram() {
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("command", "endProgram");

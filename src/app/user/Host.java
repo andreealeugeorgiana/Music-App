@@ -8,18 +8,20 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * The type Host.
  */
-public final class Host extends ContentCreator {
+public final class Host extends ContentCreator implements ObservableContentCreator {
     private ArrayList<Podcast> podcasts;
     private ArrayList<Announcement> announcements;
     @Getter
     @Setter
     private HostTops hostTops;
+    @Getter
+    @Setter
+    private List<AudioListener> subscribers;
 
     /**
      * Instantiates a new Host.
@@ -33,6 +35,7 @@ public final class Host extends ContentCreator {
         podcasts = new ArrayList<>();
         announcements = new ArrayList<>();
         hostTops = new HostTops();
+        subscribers = new ArrayList<>();
 
         super.setPage(new HostPage(this));
     }
@@ -110,4 +113,20 @@ public final class Host extends ContentCreator {
         return "host";
     }
 
+    @Override
+    public void add(final AudioListener listener) {
+        subscribers.add(listener);
+    }
+
+    @Override
+    public void remove(final AudioListener listener) {
+        subscribers.remove(listener);
+    }
+
+    @Override
+    public void notifyListeners(final String name, final String description) {
+        for (AudioListener subscriber : subscribers) {
+            subscriber.updateNotifications(name, description);
+        }
+    }
 }

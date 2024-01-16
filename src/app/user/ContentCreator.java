@@ -61,7 +61,5 @@ public abstract class ContentCreator extends UserAbstract {
     public void setPage(final Page page) {
         this.page = page;
     }
-    public void increaseListeners() {
-        listeners++;
-    }
+
 }

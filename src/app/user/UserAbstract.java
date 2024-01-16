@@ -1,11 +1,5 @@
 package app.user;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * The type User abstract.
  */
